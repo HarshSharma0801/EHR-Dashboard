@@ -2,6 +2,12 @@
 
 A modern Next.js application for Electronic Health Records (EHR) integration with ModMed and Athena Health APIs, featuring a clean and intuitive dashboard for healthcare management.
 
+## Video
+
+
+https://github.com/user-attachments/assets/da053bdd-fbc2-45f1-8c93-cedec224e177
+
+
 ## 🚀 Features
 
 ### Core Healthcare Workflows
