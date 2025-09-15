@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/app/lib/database'
+import { db } from '@/app/lib/database'
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,47 +8,65 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const limit = parseInt(searchParams.get('limit') || '20')
 
-    const where: any = {}
-    if (patientId) where.patientId = patientId
-    
+    let appointments
+
     // Map billing status to appointment status
-    if (status) {
-      const statusMap: { [key: string]: string } = {
-        'PENDING': 'SCHEDULED',
-        'PAID': 'COMPLETED',
-        'OVERDUE': 'CONFIRMED'
-      }
-      where.status = statusMap[status.toUpperCase()] || 'SCHEDULED'
+    const statusMap: { [key: string]: string } = {
+      'PENDING': 'SCHEDULED',
+      'PAID': 'COMPLETED',
+      'OVERDUE': 'CONFIRMED'
     }
 
-    const appointments = await prisma.appointment.findMany({
-      where,
-      take: limit,
-      orderBy: { appointmentDate: 'desc' },
-      include: {
-        patient: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            email: true
-          }
-        }
-      }
-    })
+    if (patientId && status) {
+      const mappedStatus = statusMap[status.toUpperCase()] || 'SCHEDULED'
+      appointments = await db`
+        SELECT a.*, p.first_name, p.last_name, p.phone, p.email
+        FROM appointments a 
+        JOIN patients p ON a.patient_id = p.id
+        WHERE a.patient_id = ${patientId} AND a.status = ${mappedStatus}
+        ORDER BY a.appointment_date DESC 
+        LIMIT ${limit}
+      `
+    } else if (patientId) {
+      appointments = await db`
+        SELECT a.*, p.first_name, p.last_name, p.phone, p.email
+        FROM appointments a 
+        JOIN patients p ON a.patient_id = p.id
+        WHERE a.patient_id = ${patientId}
+        ORDER BY a.appointment_date DESC 
+        LIMIT ${limit}
+      `
+    } else if (status) {
+      const mappedStatus = statusMap[status.toUpperCase()] || 'SCHEDULED'
+      appointments = await db`
+        SELECT a.*, p.first_name, p.last_name, p.phone, p.email
+        FROM appointments a 
+        JOIN patients p ON a.patient_id = p.id
+        WHERE a.status = ${mappedStatus}
+        ORDER BY a.appointment_date DESC 
+        LIMIT ${limit}
+      `
+    } else {
+      appointments = await db`
+        SELECT a.*, p.first_name, p.last_name, p.phone, p.email
+        FROM appointments a 
+        JOIN patients p ON a.patient_id = p.id
+        ORDER BY a.appointment_date DESC 
+        LIMIT ${limit}
+      `
+    }
 
-    const billingData = appointments.map(appointment => ({
-      id: appointment.id,
-      patientId: appointment.patientId,
-      patientName: `${appointment.patient.firstName} ${appointment.patient.lastName}`,
-      appointmentDate: appointment.appointmentDate,
-      appointmentTime: appointment.appointmentTime,
-      type: appointment.type,
-      duration: appointment.duration,
-      providerName: appointment.providerName,
-      status: appointment.status,
-      amount: appointment.duration * 2.5,
+    const billingData = appointments.map(row => ({
+      id: row.id,
+      patientId: row.patient_id,
+      patientName: `${row.first_name} ${row.last_name}`,
+      appointmentDate: row.appointment_date,
+      appointmentTime: row.appointment_time,
+      type: row.type,
+      duration: row.duration,
+      providerName: row.provider_name,
+      status: row.status,
+      amount: row.duration * 2.5,
       billingStatus: 'PENDING'
     }))
 

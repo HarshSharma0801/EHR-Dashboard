@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/app/lib/database'
+import { db, initTables } from '@/app/lib/database'
 
 export async function GET() {
   try {
-    // Test database connection
-    await prisma.$queryRaw`SELECT 1`
+    // Initialize tables and test connection
+    await initTables()
+    await db`SELECT 1`
     
     // Get basic counts
-    const [patientCount, appointmentCount] = await Promise.all([
-      prisma.patient.count(),
-      prisma.appointment.count()
+    const [patientResult, appointmentResult] = await Promise.all([
+      db`SELECT COUNT(*) FROM patients`,
+      db`SELECT COUNT(*) FROM appointments`
     ])
 
     return NextResponse.json({
@@ -17,8 +18,8 @@ export async function GET() {
       status: 'healthy',
       database: 'connected',
       data: {
-        patients: patientCount,
-        appointments: appointmentCount
+        patients: parseInt(patientResult[0].count),
+        appointments: parseInt(appointmentResult[0].count)
       },
       timestamp: new Date().toISOString()
     })

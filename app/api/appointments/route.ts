@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/app/lib/database'
-import { withCache, getCacheKey, apiCache } from '@/app/lib/api-cache'
+import { db } from '@/app/lib/database'
+import { randomUUID } from 'crypto'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,47 +11,67 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100)
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    const where: any = {}
+    let appointments, total
 
     if (date) {
-      const targetDate = new Date(date)
-      const nextDay = new Date(targetDate)
-      nextDay.setDate(nextDay.getDate() + 1)
-      where.appointmentDate = { gte: targetDate, lt: nextDay }
+      appointments = await db`
+        SELECT a.id, a."appointmentDate", a."appointmentTime", a.duration, a.type, a.status, 
+               a."providerName", a.notes, p.id as "patientId", p."firstName", p."lastName", p.phone
+        FROM appointments a 
+        JOIN patients p ON a."patientId" = p.id
+        WHERE a."appointmentDate" = ${date}
+        ORDER BY a."appointmentDate" ASC, a."appointmentTime" ASC 
+        LIMIT ${limit} OFFSET ${offset}
+      `
+      const totalResult = await db`
+        SELECT COUNT(*) FROM appointments a WHERE a."appointmentDate" = ${date}
+      `
+      total = parseInt(totalResult[0].count)
+    } else if (patientId) {
+      appointments = await db`
+        SELECT a.id, a."appointmentDate", a."appointmentTime", a.duration, a.type, a.status, 
+               a."providerName", a.notes, p.id as "patientId", p."firstName", p."lastName", p.phone
+        FROM appointments a 
+        JOIN patients p ON a."patientId" = p.id
+        WHERE a."patientId" = ${patientId}
+        ORDER BY a."appointmentDate" ASC, a."appointmentTime" ASC 
+        LIMIT ${limit} OFFSET ${offset}
+      `
+      const totalResult = await db`
+        SELECT COUNT(*) FROM appointments a WHERE a."patientId" = ${patientId}
+      `
+      total = parseInt(totalResult[0].count)
+    } else {
+      appointments = await db`
+        SELECT a.id, a."appointmentDate", a."appointmentTime", a.duration, a.type, a.status, 
+               a."providerName", a.notes, p.id as "patientId", p."firstName", p."lastName", p.phone
+        FROM appointments a 
+        JOIN patients p ON a."patientId" = p.id
+        ORDER BY a."appointmentDate" ASC, a."appointmentTime" ASC 
+        LIMIT ${limit} OFFSET ${offset}
+      `
+      const totalResult = await db`SELECT COUNT(*) FROM appointments`
+      total = parseInt(totalResult[0].count)
     }
 
-    if (patientId) where.patientId = patientId
-    if (status) where.status = status.toUpperCase()
+    const formattedAppointments = appointments.map(row => ({
+      id: row.id,
+      appointmentDate: row.appointmentDate,
+      appointmentTime: row.appointmentTime,
+      duration: row.duration,
+      type: row.type,
+      status: row.status,
+      providerName: row.providerName,
+      notes: row.notes,
+      patient: {
+        id: row.patientId,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        phone: row.phone
+      }
+    }))
 
-    const [appointments, total] = await Promise.all([
-      prisma.appointment.findMany({
-        where,
-        take: limit,
-        skip: offset,
-        orderBy: [{ appointmentDate: 'asc' }, { appointmentTime: 'asc' }],
-        select: {
-          id: true,
-          appointmentDate: true,
-          appointmentTime: true,
-          duration: true,
-          type: true,
-          status: true,
-          providerName: true,
-          notes: true,
-          patient: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              phone: true
-            }
-          }
-        }
-      }),
-      prisma.appointment.count({ where })
-    ])
-
-    return NextResponse.json({ success: true, data: appointments, total })
+    return NextResponse.json({ success: true, data: formattedAppointments, total })
   } catch (error: any) {
     console.error('Appointments API error:', error)
     return NextResponse.json({ success: false, error: error.message || 'Failed to fetch appointments' }, { status: 500 })
@@ -67,36 +87,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 })
     }
 
-    const appointment = await prisma.appointment.create({
-      data: {
-        patientId,
-        providerId: providerId || 'default-provider',
-        appointmentDate: new Date(appointmentDate),
-        appointmentTime,
-        duration: duration || 30,
-        type: type || 'Consultation',
-        providerName: providerName || 'Dr. Smith',
-        status: 'SCHEDULED'
-      },
-      select: {
-        id: true,
-        appointmentDate: true,
-        appointmentTime: true,
-        duration: true,
-        type: true,
-        status: true,
-        providerName: true,
-        patient: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true
-          }
-        }
-      }
-    })
+    const appointmentId = randomUUID()
+    const result = await db`
+      INSERT INTO appointments (id, "patientId", "providerId", "appointmentDate", "appointmentTime", duration, type, "providerName", status, "updatedAt") 
+      VALUES (${appointmentId}, ${patientId}, ${providerId || 'default-provider'}, ${appointmentDate}, ${appointmentTime}, ${duration || 30}, ${type || 'Consultation'}, ${providerName || 'Dr. Smith'}, 'SCHEDULED', NOW()) 
+      RETURNING *
+    `
 
-    apiCache.invalidatePattern('appointments')
+    const patientResult = await db`SELECT id, "firstName", "lastName" FROM patients WHERE id = ${patientId}`
+
+    const appointment = {
+      id: result[0].id,
+      appointmentDate: result[0].appointmentDate,
+      appointmentTime: result[0].appointmentTime,
+      duration: result[0].duration,
+      type: result[0].type,
+      status: result[0].status,
+      providerName: result[0].providerName,
+      patient: {
+        id: patientResult[0].id,
+        firstName: patientResult[0].firstName,
+        lastName: patientResult[0].lastName
+      }
+    }
+
     return NextResponse.json({ success: true, data: appointment })
   } catch (error: any) {
     return NextResponse.json({ success: false, error: 'Failed to create appointment' }, { status: 500 })

@@ -1,139 +1,85 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/app/lib/database'
-import { seedPatients, seedProviders, seedAppointmentTypes, seedAllergies, seedMedications, generateSeedVitals, seedClinicalNotes } from '@/app/lib/mock-data'
+import { db } from '@/app/lib/database'
+import { randomUUID } from 'crypto'
+
+const seedPatients = [
+  { firstName: 'John', lastName: 'Smith', dateOfBirth: '1985-03-15', gender: 'MALE', phone: '(555) 123-4567', email: 'john.smith@email.com' },
+  { firstName: 'Emily', lastName: 'Davis', dateOfBirth: '1992-05-14', gender: 'FEMALE', phone: '(555) 456-7890', email: 'emily.davis@email.com' },
+  { firstName: 'Michael', lastName: 'Johnson', dateOfBirth: '1978-11-08', gender: 'MALE', phone: '(555) 345-6789', email: 'michael.johnson@email.com' },
+  { firstName: 'Sarah', lastName: 'Wilson', dateOfBirth: '1990-07-22', gender: 'FEMALE', phone: '(555) 234-5678', email: 'sarah.wilson@email.com' },
+  { firstName: 'Robert', lastName: 'Brown', dateOfBirth: '1965-09-30', gender: 'MALE', phone: '(555) 567-8901', email: 'robert.brown@email.com' }
+]
 
 export async function POST() {
   try {
-    // Parallel cleanup
-    await Promise.all([
-      prisma.clinicalNote.deleteMany(),
-      prisma.vitalSign.deleteMany(),
-      prisma.medication.deleteMany(),
-      prisma.allergy.deleteMany(),
-      prisma.appointment.deleteMany(),
-      prisma.patient.deleteMany()
-    ])
+    // Clear existing data
+    await db`DELETE FROM clinical_notes`
+    await db`DELETE FROM vital_signs`
+    await db`DELETE FROM appointments`
+    await db`DELETE FROM patients`
 
-    // Batch create patients
-    const createdPatients = await prisma.patient.createMany({
-      data: seedPatients,
-      skipDuplicates: true
-    })
+    // Insert patients and collect IDs
+    const patientIds: string[] = []
+    for (const patient of seedPatients) {
+      const patientId = randomUUID()
+      await db`
+        INSERT INTO patients (id, "firstName", "lastName", "dateOfBirth", gender, phone, email, "updatedAt") 
+        VALUES (${patientId}, ${patient.firstName}, ${patient.lastName}, ${patient.dateOfBirth}, ${patient.gender}, ${patient.phone}, ${patient.email}, NOW()) 
+      `
+      patientIds.push(patientId)
+    }
 
-    const patients = await prisma.patient.findMany({
-      select: { id: true, firstName: true }
-    })
-
-    // Prepare batch data
-    const appointments = []
-    const allergies = []
-    const medications = []
-    const vitals = []
-    const notes = []
-
-    for (let i = 0; i < patients.length; i++) {
-      const patient = patients[i]
-      const provider = seedProviders[i % seedProviders.length]
-      
-      // Generate appointments
-      for (let j = 0; j < Math.floor(Math.random() * 2) + 2; j++) {
+    // Insert appointments
+    let appointmentCount = 0
+    for (let i = 0; i < patientIds.length; i++) {
+      const numAppointments = Math.floor(Math.random() * 3) + 1
+      for (let j = 0; j < numAppointments; j++) {
         const appointmentDate = new Date()
         appointmentDate.setDate(appointmentDate.getDate() + Math.floor(Math.random() * 30) - 15)
         
         const hours = Math.floor(Math.random() * 8) + 9
         const minutes = Math.random() < 0.5 ? '00' : '30'
+        const appointmentTime = `${hours.toString().padStart(2, '0')}:${minutes}`
         
-        appointments.push({
-          patientId: patient.id,
-          providerId: provider.id,
-          providerName: `Dr. ${provider.firstName} ${provider.lastName}`,
-          appointmentDate,
-          appointmentTime: `${hours.toString().padStart(2, '0')}:${minutes}`,
-          duration: [30, 45, 60][Math.floor(Math.random() * 3)],
-          type: seedAppointmentTypes[Math.floor(Math.random() * seedAppointmentTypes.length)],
-          status: (['SCHEDULED', 'CONFIRMED', 'COMPLETED'] as const)[Math.floor(Math.random() * 3)],
-          notes: Math.random() < 0.7 ? `Follow-up appointment for ${patient.firstName}` : null
-        })
-      }
-
-      // Generate allergies
-      if (Math.random() < 0.6) {
-        const numAllergies = Math.floor(Math.random() * 3) + 1
-        for (let j = 0; j < numAllergies; j++) {
-          const allergy = seedAllergies[Math.floor(Math.random() * seedAllergies.length)]
-          allergies.push({
-            patientId: patient.id,
-            ...allergy,
-            dateRecorded: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000)
-          })
-        }
-      }
-
-      // Generate medications
-      if (Math.random() < 0.8) {
-        const numMeds = Math.floor(Math.random() * 4) + 1
-        for (let j = 0; j < numMeds; j++) {
-          const medication = seedMedications[Math.floor(Math.random() * seedMedications.length)]
-          medications.push({
-            patientId: patient.id,
-            ...medication,
-            prescribedDate: new Date(Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000),
-            active: Math.random() < 0.9
-          })
-        }
-      }
-
-      // Generate vitals
-      const numVitals = Math.floor(Math.random() * 5) + 3
-      for (let j = 0; j < numVitals; j++) {
-        const vitalData = generateSeedVitals(patient.id)
-        vitals.push({
-          ...vitalData,
-          recordedDate: new Date(Date.now() - j * 30 * 24 * 60 * 60 * 1000)
-        })
-      }
-
-      // Generate clinical notes
-      if (Math.random() < 0.7) {
-        const numNotes = Math.floor(Math.random() * 3) + 1
-        for (let j = 0; j < numNotes; j++) {
-          const note = seedClinicalNotes[Math.floor(Math.random() * seedClinicalNotes.length)]
-          const noteProvider = seedProviders[Math.floor(Math.random() * seedProviders.length)]
-          
-          notes.push({
-            patientId: patient.id,
-            providerId: noteProvider.id,
-            providerName: `Dr. ${noteProvider.firstName} ${noteProvider.lastName}`,
-            ...note,
-            createdAt: new Date(Date.now() - j * 14 * 24 * 60 * 60 * 1000)
-          })
-        }
+        const types = ['Consultation', 'Follow-up', 'Check-up', 'Physical Exam']
+        const statuses = ['SCHEDULED', 'CONFIRMED', 'COMPLETED']
+        
+        await db`
+          INSERT INTO appointments (id, "patientId", "providerId", "providerName", "appointmentDate", "appointmentTime", duration, type, status, "updatedAt") 
+          VALUES (${randomUUID()}, ${patientIds[i]}, ${'provider-' + (i % 3 + 1)}, ${'Dr. ' + ['Smith', 'Johnson', 'Brown'][i % 3]}, ${appointmentDate.toISOString().split('T')[0]}, ${appointmentTime}, ${[30, 45, 60][Math.floor(Math.random() * 3)]}, ${types[Math.floor(Math.random() * types.length)]}, ${statuses[Math.floor(Math.random() * statuses.length)]}, NOW())
+        `
+        appointmentCount++
       }
     }
 
-    // Batch create all data in parallel
-    await Promise.all([
-      appointments.length > 0 ? prisma.appointment.createMany({ data: appointments, skipDuplicates: true }) : Promise.resolve(),
-      allergies.length > 0 ? prisma.allergy.createMany({ data: allergies, skipDuplicates: true }) : Promise.resolve(),
-      medications.length > 0 ? prisma.medication.createMany({ data: medications, skipDuplicates: true }) : Promise.resolve(),
-      vitals.length > 0 ? prisma.vitalSign.createMany({ data: vitals, skipDuplicates: true }) : Promise.resolve(),
-      notes.length > 0 ? prisma.clinicalNote.createMany({ data: notes, skipDuplicates: true }) : Promise.resolve()
-    ])
+    // Insert vital signs
+    let vitalCount = 0
+    for (const patientId of patientIds) {
+      const numVitals = Math.floor(Math.random() * 3) + 1
+      for (let j = 0; j < numVitals; j++) {
+        await db`
+          INSERT INTO vital_signs (id, "patientId", "bloodPressureSystolic", "bloodPressureDiastolic", "heartRate", temperature, weight, height) 
+          VALUES (${randomUUID()}, ${patientId}, ${Math.floor(Math.random() * 40) + 110}, ${Math.floor(Math.random() * 20) + 70}, ${Math.floor(Math.random() * 30) + 60}, ${Math.random() * 2 + 97.5}, ${Math.random() * 50 + 120}, ${Math.random() * 12 + 60})
+        `
+        vitalCount++
+      }
+    }
 
-    // Get final counts in parallel
-    const [appointmentCount, allergyCount, medicationCount, vitalCount, noteCount] = await Promise.all([
-      prisma.appointment.count(),
-      prisma.allergy.count(),
-      prisma.medication.count(),
-      prisma.vitalSign.count(),
-      prisma.clinicalNote.count()
-    ])
+    // Insert clinical notes
+    let noteCount = 0
+    for (const patientId of patientIds) {
+      if (Math.random() < 0.7) {
+        await db`
+          INSERT INTO clinical_notes (id, "patientId", "providerId", "providerName", "noteType", content, "updatedAt") 
+          VALUES (${randomUUID()}, ${patientId}, 'provider-1', 'Dr. Smith', 'PROGRESS', 'Patient is responding well to treatment. Continue current medication regimen.', NOW())
+        `
+        noteCount++
+      }
+    }
 
     const stats = {
-      patients: patients.length,
+      patients: patientIds.length,
       appointments: appointmentCount,
-      allergies: allergyCount,
-      medications: medicationCount,
       vitalSigns: vitalCount,
       clinicalNotes: noteCount
     }

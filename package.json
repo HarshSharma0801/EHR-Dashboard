@@ -4,16 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
-    "test:watch": "jest --watch",
-    "postinstall": "prisma generate"
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
-    "@prisma/client": "^5.22.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
@@ -24,8 +22,9 @@
     "lucide-react": "^0.294.0",
     "next": "14.0.4",
     "package": "^1.0.1",
+    "pg": "^8.16.3",
     "postcss": "^8",
-    "prisma": "^5.22.0",
+    "postgres": "^3.4.7",
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.48.2",
@@ -38,6 +37,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^13.4.0",
+    "@types/pg": "^8.15.5",
     "eslint": "^8.57.0",
     "eslint-config-next": "14.0.4",
     "jest": "^29.7.0",
