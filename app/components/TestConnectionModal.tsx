@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { CheckCircle, XCircle, Loader, Database, Server } from 'lucide-react'
 import Modal from './ui/Modal'
 import Button from './ui/Button'
+import api from '../lib/api'
 
 interface TestConnectionModalProps {
   isOpen: boolean
@@ -38,18 +39,17 @@ export default function TestConnectionModal({ isOpen, onClose }: TestConnectionM
       
       const startTime = Date.now()
       try {
-        const response = await fetch(test.endpoint)
-        const data = await response.json()
+        const response = await api.get(test.endpoint)
         const responseTime = Date.now() - startTime
 
         setResults(prev => prev.map(result => 
           result.name === test.name 
             ? {
                 name: test.name,
-                status: data.success ? 'success' : 'error',
-                message: data.success 
+                status: response.data.success ? 'success' : 'error',
+                message: response.data.success 
                   ? `✓ Connected successfully (${responseTime}ms)` 
-                  : data.error || 'Connection failed',
+                  : response.data.error || 'Connection failed',
                 responseTime
               }
             : result
@@ -61,7 +61,7 @@ export default function TestConnectionModal({ isOpen, onClose }: TestConnectionM
             ? {
                 name: test.name,
                 status: 'error',
-                message: `✗ ${error.message || 'Connection failed'} (${responseTime}ms)`,
+                message: `✗ ${error.response?.data?.error || error.message || 'Connection failed'} (${responseTime}ms)`,
                 responseTime
               }
             : result
