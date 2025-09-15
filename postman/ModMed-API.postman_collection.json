@@ -1,0 +1,255 @@
+{
+  "info": {
+    "name": "ModMed API",
+    "description": "ModMed EMA API integration endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "modmedBaseUrl",
+      "value": "https://stage.ema-api.com/ema-dev",
+      "type": "string"
+    },
+    {
+      "key": "firmPrefix",
+      "value": "entpmsandbox393",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "f69902ad-c2bc-4b30-aa89-e136d26a04b3",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "fhir_pmOYS",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "NmrxdT7I34",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Get Access Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{apiKey}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"firm_prefix\": \"{{firmPrefix}}\"\n}"
+            },
+            "url": {
+              "raw": "{{modmedBaseUrl}}/auth/login",
+              "host": ["{{modmedBaseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "FHIR Patients",
+      "item": [
+        {
+          "name": "Get All Patients",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "X-API-Key", "value": "{{apiKey}}"}
+            ],
+            "url": {
+              "raw": "{{modmedBaseUrl}}/fhir/Patient",
+              "host": ["{{modmedBaseUrl}}"],
+              "path": ["fhir", "Patient"]
+            }
+          }
+        },
+        {
+          "name": "Search Patients by Name",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "X-API-Key", "value": "{{apiKey}}"}
+            ],
+            "url": {
+              "raw": "{{modmedBaseUrl}}/fhir/Patient?name=John",
+              "host": ["{{modmedBaseUrl}}"],
+              "path": ["fhir", "Patient"],
+              "query": [
+                {"key": "name", "value": "John"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Patient by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "X-API-Key", "value": "{{apiKey}}"}
+            ],
+            "url": {
+              "raw": "{{modmedBaseUrl}}/fhir/Patient/123",
+              "host": ["{{modmedBaseUrl}}"],
+              "path": ["fhir", "Patient", "123"]
+            }
+          }
+        },
+        {
+          "name": "Create Patient",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "X-API-Key", "value": "{{apiKey}}"},
+              {"key": "Content-Type", "value": "application/fhir+json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceType\": \"Patient\",\n  \"name\": [{\n    \"use\": \"official\",\n    \"family\": \"Doe\",\n    \"given\": [\"Jane\"]\n  }],\n  \"gender\": \"female\",\n  \"birthDate\": \"1990-05-15\",\n  \"telecom\": [{\n    \"system\": \"phone\",\n    \"value\": \"555-123-4567\"\n  }, {\n    \"system\": \"email\",\n    \"value\": \"jane.doe@email.com\"\n  }]\n}"
+            },
+            "url": {
+              "raw": "{{modmedBaseUrl}}/fhir/Patient",
+              "host": ["{{modmedBaseUrl}}"],
+              "path": ["fhir", "Patient"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "FHIR Appointments",
+      "item": [
+        {
+          "name": "Get Appointments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "X-API-Key", "value": "{{apiKey}}"}
+            ],
+            "url": {
+              "raw": "{{modmedBaseUrl}}/fhir/Appointment",
+              "host": ["{{modmedBaseUrl}}"],
+              "path": ["fhir", "Appointment"]
+            }
+          }
+        },
+        {
+          "name": "Get Appointments by Patient",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "X-API-Key", "value": "{{apiKey}}"}
+            ],
+            "url": {
+              "raw": "{{modmedBaseUrl}}/fhir/Appointment?patient=Patient/123",
+              "host": ["{{modmedBaseUrl}}"],
+              "path": ["fhir", "Appointment"],
+              "query": [
+                {"key": "patient", "value": "Patient/123"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "X-API-Key", "value": "{{apiKey}}"},
+              {"key": "Content-Type", "value": "application/fhir+json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceType\": \"Appointment\",\n  \"status\": \"booked\",\n  \"serviceType\": [{\n    \"coding\": [{\n      \"system\": \"http://terminology.hl7.org/CodeSystem/service-type\",\n      \"code\": \"124\",\n      \"display\": \"General Practice\"\n    }]\n  }],\n  \"start\": \"2025-09-20T10:00:00Z\",\n  \"end\": \"2025-09-20T10:30:00Z\",\n  \"participant\": [{\n    \"actor\": {\n      \"reference\": \"Patient/123\"\n    },\n    \"status\": \"accepted\"\n  }]\n}"
+            },
+            "url": {
+              "raw": "{{modmedBaseUrl}}/fhir/Appointment",
+              "host": ["{{modmedBaseUrl}}"],
+              "path": ["fhir", "Appointment"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "FHIR Clinical Data",
+      "item": [
+        {
+          "name": "Get Observations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "X-API-Key", "value": "{{apiKey}}"}
+            ],
+            "url": {
+              "raw": "{{modmedBaseUrl}}/fhir/Observation?patient=Patient/123",
+              "host": ["{{modmedBaseUrl}}"],
+              "path": ["fhir", "Observation"],
+              "query": [
+                {"key": "patient", "value": "Patient/123"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Allergies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "X-API-Key", "value": "{{apiKey}}"}
+            ],
+            "url": {
+              "raw": "{{modmedBaseUrl}}/fhir/AllergyIntolerance?patient=Patient/123",
+              "host": ["{{modmedBaseUrl}}"],
+              "path": ["fhir", "AllergyIntolerance"],
+              "query": [
+                {"key": "patient", "value": "Patient/123"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Medications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "X-API-Key", "value": "{{apiKey}}"}
+            ],
+            "url": {
+              "raw": "{{modmedBaseUrl}}/fhir/MedicationRequest?patient=Patient/123",
+              "host": ["{{modmedBaseUrl}}"],
+              "path": ["fhir", "MedicationRequest"],
+              "query": [
+                {"key": "patient", "value": "Patient/123"}
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

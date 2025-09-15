@@ -1,0 +1,215 @@
+{
+  "info": {
+    "name": "EHR Dashboard APIs",
+    "description": "Complete API collection for EHR Dashboard internal endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "health"]
+        }
+      }
+    },
+    {
+      "name": "Patients",
+      "item": [
+        {
+          "name": "Get All Patients",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients?limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "patients"],
+              "query": [
+                {"key": "limit", "value": "20"},
+                {"key": "offset", "value": "0"},
+                {"key": "search", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Patients",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients?search=John&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "patients"],
+              "query": [
+                {"key": "search", "value": "John"},
+                {"key": "limit", "value": "10"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Patient",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"gender\": \"FEMALE\",\n  \"phone\": \"(555) 123-4567\",\n  \"email\": \"jane.doe@email.com\",\n  \"address\": {\n    \"street\": \"123 Main St\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"zipCode\": \"10001\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/patients",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "patients"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Appointments",
+      "item": [
+        {
+          "name": "Get All Appointments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments"],
+              "query": [
+                {"key": "limit", "value": "20"},
+                {"key": "date", "value": "", "disabled": true},
+                {"key": "patientId", "value": "", "disabled": true},
+                {"key": "status", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Appointment",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"patient_id_here\",\n  \"appointmentDate\": \"2025-09-20\",\n  \"appointmentTime\": \"10:00\",\n  \"duration\": 30,\n  \"type\": \"Consultation\",\n  \"providerName\": \"Dr. Smith\",\n  \"notes\": \"Follow-up appointment\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clinical & Vitals",
+      "item": [
+        {
+          "name": "Get Clinical Notes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clinical?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clinical"],
+              "query": [
+                {"key": "limit", "value": "20"},
+                {"key": "patientId", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Clinical Note",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"patient_id_here\",\n  \"providerId\": \"provider_id_here\",\n  \"providerName\": \"Dr. Smith\",\n  \"noteType\": \"PROGRESS\",\n  \"content\": \"Patient responding well to treatment.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clinical",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clinical"]
+            }
+          }
+        },
+        {
+          "name": "Get Vital Signs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vitals?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vitals"]
+            }
+          }
+        },
+        {
+          "name": "Record Vital Signs",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"patient_id_here\",\n  \"bloodPressureSystolic\": 120,\n  \"bloodPressureDiastolic\": 80,\n  \"heartRate\": 72,\n  \"temperature\": 98.6,\n  \"weight\": 150.5,\n  \"height\": 68.0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/vitals",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vitals"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Seed Database",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/seed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "seed"]
+            }
+          }
+        },
+        {
+          "name": "Get Billing",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

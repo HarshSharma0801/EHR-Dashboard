@@ -1,0 +1,226 @@
+{
+  "info": {
+    "name": "Athena Health API",
+    "description": "Athena Health API integration endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "athenaBaseUrl",
+      "value": "https://api.preview.platform.athenahealth.com",
+      "type": "string"
+    },
+    {
+      "key": "clientId",
+      "value": "0oaz47ybh6YspFi1S297",
+      "type": "string"
+    },
+    {
+      "key": "clientSecret",
+      "value": "_OXTpPLpbOryXs1Iz_vHjnyxGe3py5A4eJgL7IlhPi1k5Kbup_tIxNM4Eiv5ER4W",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "oauth2",
+    "oauth2": [
+      {
+        "key": "tokenName",
+        "value": "Athena Token",
+        "type": "string"
+      },
+      {
+        "key": "clientId",
+        "value": "{{clientId}}",
+        "type": "string"
+      },
+      {
+        "key": "clientSecret",
+        "value": "{{clientSecret}}",
+        "type": "string"
+      },
+      {
+        "key": "accessTokenUrl",
+        "value": "{{athenaBaseUrl}}/oauth2/v1/token",
+        "type": "string"
+      },
+      {
+        "key": "grant_type",
+        "value": "client_credentials",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Get Access Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/x-www-form-urlencoded"}
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {"key": "grant_type", "value": "client_credentials"},
+                {"key": "scope", "value": "athenahealth/service/thirdparty.readonly"}
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {"key": "username", "value": "{{clientId}}"},
+                {"key": "password", "value": "{{clientSecret}}"}
+              ]
+            },
+            "url": {
+              "raw": "{{athenaBaseUrl}}/oauth2/v1/token",
+              "host": ["{{athenaBaseUrl}}"],
+              "path": ["oauth2", "v1", "token"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patients",
+      "item": [
+        {
+          "name": "Search Patients",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{athenaBaseUrl}}/v1/195900/patients?firstname=John&lastname=Smith",
+              "host": ["{{athenaBaseUrl}}"],
+              "path": ["v1", "195900", "patients"],
+              "query": [
+                {"key": "firstname", "value": "John"},
+                {"key": "lastname", "value": "Smith"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Patient Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{athenaBaseUrl}}/v1/195900/patients/1",
+              "host": ["{{athenaBaseUrl}}"],
+              "path": ["v1", "195900", "patients", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Appointments",
+      "item": [
+        {
+          "name": "Get Appointments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{athenaBaseUrl}}/v1/195900/appointments?startdate=09/15/2025&enddate=09/16/2025",
+              "host": ["{{athenaBaseUrl}}"],
+              "path": ["v1", "195900", "appointments"],
+              "query": [
+                {"key": "startdate", "value": "09/15/2025"},
+                {"key": "enddate", "value": "09/16/2025"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Book Appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/x-www-form-urlencoded"}
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {"key": "appointmentdate", "value": "09/20/2025"},
+                {"key": "appointmenttime", "value": "10:00"},
+                {"key": "appointmenttypeid", "value": "2"},
+                {"key": "departmentid", "value": "1"},
+                {"key": "patientid", "value": "1"}
+              ]
+            },
+            "url": {
+              "raw": "{{athenaBaseUrl}}/v1/195900/appointments",
+              "host": ["{{athenaBaseUrl}}"],
+              "path": ["v1", "195900", "appointments"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clinical Data",
+      "item": [
+        {
+          "name": "Get Patient Chart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{athenaBaseUrl}}/v1/195900/patients/1/chart",
+              "host": ["{{athenaBaseUrl}}"],
+              "path": ["v1", "195900", "patients", "1", "chart"]
+            }
+          }
+        },
+        {
+          "name": "Get Allergies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{athenaBaseUrl}}/v1/195900/patients/1/allergies",
+              "host": ["{{athenaBaseUrl}}"],
+              "path": ["v1", "195900", "patients", "1", "allergies"]
+            }
+          }
+        },
+        {
+          "name": "Get Medications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{athenaBaseUrl}}/v1/195900/patients/1/medications",
+              "host": ["{{athenaBaseUrl}}"],
+              "path": ["v1", "195900", "patients", "1", "medications"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
