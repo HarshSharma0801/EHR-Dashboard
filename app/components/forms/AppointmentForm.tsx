@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Save, X, Search } from 'lucide-react'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
+import api from '../../lib/api'
 import toast from 'react-hot-toast'
 
 interface AppointmentFormProps {
@@ -43,10 +44,11 @@ export default function AppointmentForm({ onClose, onSuccess, selectedDate }: Ap
 
   const fetchPatients = async () => {
     try {
-      const response = await fetch(`/api/patients?search=${searchTerm}&limit=10`)
-      const result = await response.json()
-      if (result.success) {
-        setPatients(result.data)
+      const response = await api.get('/api/patients', {
+        params: { search: searchTerm, limit: 10 }
+      })
+      if (response.data.success) {
+        setPatients(response.data.data)
       }
     } catch (error) {
       console.error('Failed to fetch patients')
@@ -63,26 +65,20 @@ export default function AppointmentForm({ onClose, onSuccess, selectedDate }: Ap
 
     setLoading(true)
     try {
-      const response = await fetch('/api/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patientId: selectedPatient.id,
-          ...formData
-        })
+      const response = await api.post('/api/appointments', {
+        patientId: selectedPatient.id,
+        ...formData
       })
       
-      const result = await response.json()
-      
-      if (result.success) {
+      if (response.data.success) {
         toast.success('Appointment scheduled successfully')
         onSuccess()
         onClose()
       } else {
-        toast.error(result.error || 'Failed to schedule appointment')
+        toast.error(response.data.error || 'Failed to schedule appointment')
       }
-    } catch (error) {
-      toast.error('Failed to schedule appointment')
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to schedule appointment')
     } finally {
       setLoading(false)
     }

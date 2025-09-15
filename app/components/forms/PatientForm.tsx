@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Save, X } from 'lucide-react'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
+import api from '../../lib/api'
 import toast from 'react-hot-toast'
 
 interface PatientFormProps {
@@ -38,23 +39,17 @@ export default function PatientForm({ onClose, onSuccess }: PatientFormProps) {
 
     setLoading(true)
     try {
-      const response = await fetch('/api/patients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      })
+      const response = await api.post('/api/patients', formData)
       
-      const result = await response.json()
-      
-      if (result.success) {
+      if (response.data.success) {
         toast.success('Patient created successfully')
         onSuccess()
         onClose()
       } else {
-        toast.error(result.error || 'Failed to create patient')
+        toast.error(response.data.error || 'Failed to create patient')
       }
-    } catch (error) {
-      toast.error('Failed to create patient')
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to create patient')
     } finally {
       setLoading(false)
     }
