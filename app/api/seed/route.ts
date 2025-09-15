@@ -18,21 +18,29 @@ export async function POST() {
     await db`DELETE FROM appointments`
     await db`DELETE FROM patients`
 
-    // Insert patients and collect IDs
+    // Insert patients in batch
     const patientIds: string[] = []
-    for (const patient of seedPatients) {
+    const patientInserts = seedPatients.map(patient => {
       const patientId = randomUUID()
-      await db`
-        INSERT INTO patients (id, "firstName", "lastName", "dateOfBirth", gender, phone, email, "updatedAt") 
-        VALUES (${patientId}, ${patient.firstName}, ${patient.lastName}, ${patient.dateOfBirth}, ${patient.gender}, ${patient.phone}, ${patient.email}, NOW()) 
-      `
       patientIds.push(patientId)
-    }
+      return {
+        id: patientId,
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        dateOfBirth: patient.dateOfBirth,
+        gender: patient.gender,
+        phone: patient.phone,
+        email: patient.email,
+        updatedAt: new Date()
+      }
+    })
+    
+    await db`INSERT INTO patients ${db(patientInserts)}`
 
-    // Insert appointments
-    let appointmentCount = 0
+    // Insert appointments in batch
+    const appointmentInserts = []
     for (let i = 0; i < patientIds.length; i++) {
-      const numAppointments = Math.floor(Math.random() * 3) + 1
+      const numAppointments = Math.floor(Math.random() * 2) + 1
       for (let j = 0; j < numAppointments; j++) {
         const appointmentDate = new Date()
         appointmentDate.setDate(appointmentDate.getDate() + Math.floor(Math.random() * 30) - 15)
@@ -44,44 +52,71 @@ export async function POST() {
         const types = ['Consultation', 'Follow-up', 'Check-up', 'Physical Exam']
         const statuses = ['SCHEDULED', 'CONFIRMED', 'COMPLETED']
         
-        await db`
-          INSERT INTO appointments (id, "patientId", "providerId", "providerName", "appointmentDate", "appointmentTime", duration, type, status, "updatedAt") 
-          VALUES (${randomUUID()}, ${patientIds[i]}, ${'provider-' + (i % 3 + 1)}, ${'Dr. ' + ['Smith', 'Johnson', 'Brown'][i % 3]}, ${appointmentDate.toISOString().split('T')[0]}, ${appointmentTime}, ${[30, 45, 60][Math.floor(Math.random() * 3)]}, ${types[Math.floor(Math.random() * types.length)]}, ${statuses[Math.floor(Math.random() * statuses.length)]}, NOW())
-        `
-        appointmentCount++
+        appointmentInserts.push({
+          id: randomUUID(),
+          patientId: patientIds[i],
+          providerId: 'provider-' + (i % 3 + 1),
+          providerName: 'Dr. ' + ['Smith', 'Johnson', 'Brown'][i % 3],
+          appointmentDate: appointmentDate.toISOString().split('T')[0],
+          appointmentTime,
+          duration: [30, 45, 60][Math.floor(Math.random() * 3)],
+          type: types[Math.floor(Math.random() * types.length)],
+          status: statuses[Math.floor(Math.random() * statuses.length)],
+          updatedAt: new Date()
+        })
       }
     }
-
-    // Insert vital signs
-    let vitalCount = 0
-    for (const patientId of patientIds) {
-      const numVitals = Math.floor(Math.random() * 3) + 1
-      for (let j = 0; j < numVitals; j++) {
-        await db`
-          INSERT INTO vital_signs (id, "patientId", "bloodPressureSystolic", "bloodPressureDiastolic", "heartRate", temperature, weight, height) 
-          VALUES (${randomUUID()}, ${patientId}, ${Math.floor(Math.random() * 40) + 110}, ${Math.floor(Math.random() * 20) + 70}, ${Math.floor(Math.random() * 30) + 60}, ${Math.random() * 2 + 97.5}, ${Math.random() * 50 + 120}, ${Math.random() * 12 + 60})
-        `
-        vitalCount++
-      }
+    
+    if (appointmentInserts.length > 0) {
+      await db`INSERT INTO appointments ${db(appointmentInserts)}`
     }
 
-    // Insert clinical notes
-    let noteCount = 0
+    // Insert vital signs in batch
+    const vitalInserts = []
     for (const patientId of patientIds) {
-      if (Math.random() < 0.7) {
-        await db`
-          INSERT INTO clinical_notes (id, "patientId", "providerId", "providerName", "noteType", content, "updatedAt") 
-          VALUES (${randomUUID()}, ${patientId}, 'provider-1', 'Dr. Smith', 'PROGRESS', 'Patient is responding well to treatment. Continue current medication regimen.', NOW())
-        `
-        noteCount++
+      if (Math.random() < 0.8) {
+        vitalInserts.push({
+          id: randomUUID(),
+          patientId,
+          bloodPressureSystolic: Math.floor(Math.random() * 40) + 110,
+          bloodPressureDiastolic: Math.floor(Math.random() * 20) + 70,
+          heartRate: Math.floor(Math.random() * 30) + 60,
+          temperature: Math.random() * 2 + 97.5,
+          weight: Math.random() * 50 + 120,
+          height: Math.random() * 12 + 60
+        })
       }
+    }
+    
+    if (vitalInserts.length > 0) {
+      await db`INSERT INTO vital_signs ${db(vitalInserts)}`
+    }
+
+    // Insert clinical notes in batch
+    const noteInserts = []
+    for (let i = 0; i < patientIds.length; i++) {
+      if (Math.random() < 0.6) {
+        noteInserts.push({
+          id: randomUUID(),
+          patientId: patientIds[i],
+          providerId: 'provider-1',
+          providerName: 'Dr. Smith',
+          noteType: 'PROGRESS',
+          content: 'Patient is responding well to treatment. Continue current medication regimen.',
+          updatedAt: new Date()
+        })
+      }
+    }
+    
+    if (noteInserts.length > 0) {
+      await db`INSERT INTO clinical_notes ${db(noteInserts)}`
     }
 
     const stats = {
       patients: patientIds.length,
-      appointments: appointmentCount,
-      vitalSigns: vitalCount,
-      clinicalNotes: noteCount
+      appointments: appointmentInserts.length,
+      vitalSigns: vitalInserts.length,
+      clinicalNotes: noteInserts.length
     }
 
     return NextResponse.json({

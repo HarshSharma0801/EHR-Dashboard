@@ -5,7 +5,9 @@ const globalForDb = globalThis as unknown as {
 }
 
 export const db = globalForDb.db ?? postgres(process.env.DATABASE_URL!, {
-  ssl: process.env.NODE_ENV === 'production' ? 'require' : false
+  max: 20,
+  idle_timeout: 20,
+  connect_timeout: 10
 })
 
 if (process.env.NODE_ENV !== 'production') globalForDb.db = db
