@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Patient {
+  id            String   @id @default(cuid())
+  firstName     String
+  lastName      String
+  dateOfBirth   DateTime
+  gender        Gender
+  phone         String?
+  email         String?
+  addressStreet String?
+  addressCity   String?
+  addressState  String?
+  addressZip    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  appointments  Appointment[]
+  allergies     Allergy[]
+  medications   Medication[]
+  vitalSigns    VitalSign[]
+  clinicalNotes ClinicalNote[]
+
+  @@map("patients")
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  patientId       String
+  patient         Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  providerId      String
+  providerName    String
+  appointmentDate DateTime
+  appointmentTime String
+  duration        Int               @default(30)
+  type            String
+  status          AppointmentStatus @default(SCHEDULED)
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@map("appointments")
+}
+
+model Allergy {
+  id           String          @id @default(cuid())
+  patientId    String
+  patient      Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  allergen     String
+  severity     AllergySeverity
+  reaction     String?
+  dateRecorded DateTime        @default(now())
+  createdAt    DateTime        @default(now())
+
+  @@map("allergies")
+}
+
+model Medication {
+  id            String   @id @default(cuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  name          String
+  dosage        String?
+  frequency     String?
+  prescribedDate DateTime?
+  prescribedBy  String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  @@map("medications")
+}
+
+model VitalSign {
+  id                     String   @id @default(cuid())
+  patientId              String
+  patient                Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  recordedDate           DateTime @default(now())
+  bloodPressureSystolic  Int?
+  bloodPressureDiastolic Int?
+  heartRate              Int?
+  temperature            Float?
+  weight                 Float?
+  height                 Float?
+  respiratoryRate        Int?
+  oxygenSaturation       Int?
+  createdAt              DateTime @default(now())
+
+  @@map("vital_signs")
+}
+
+model ClinicalNote {
+  id            String   @id @default(cuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  providerId    String
+  providerName  String
+  appointmentId String?
+  noteType      NoteType
+  content       String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("clinical_notes")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum AllergySeverity {
+  MILD
+  MODERATE
+  SEVERE
+}
+
+enum NoteType {
+  PROGRESS
+  ASSESSMENT
+  PLAN
+  SOAP
+}
