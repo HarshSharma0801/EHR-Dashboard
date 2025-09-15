@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import Card from './components/ui/Card'
 import Button from './components/ui/Button'
+import api from './lib/api'
 import Link from 'next/link'
 
 interface DashboardStats {
@@ -48,18 +49,18 @@ export default function Dashboard() {
       const today = new Date().toISOString().split('T')[0]
       
       const [patientsResponse, appointmentsResponse, allAppointmentsResponse, vitalsResponse] = await Promise.all([
-        fetch('/api/patients?limit=1'),
-        fetch(`/api/appointments?date=${today}`),
-        fetch('/api/appointments?limit=1'),
-        fetch('/api/vitals?limit=1')
+        api.get('/api/patients', { params: { limit: 1 } }),
+        api.get('/api/appointments', { params: { date: today } }),
+        api.get('/api/appointments', { params: { limit: 1 } }),
+        api.get('/api/vitals', { params: { limit: 1 } })
       ])
       
-      const [patientsData, appointmentsData, allAppointmentsData, vitalsData] = await Promise.all([
-        patientsResponse.json(),
-        appointmentsResponse.json(),
-        allAppointmentsResponse.json(),
-        vitalsResponse.json()
-      ])
+      const [patientsData, appointmentsData, allAppointmentsData, vitalsData] = [
+        patientsResponse.data,
+        appointmentsResponse.data,
+        allAppointmentsResponse.data,
+        vitalsResponse.data
+      ]
       
       setStats({
         totalPatients: patientsData.total || 0,
