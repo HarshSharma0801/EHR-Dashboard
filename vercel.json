@@ -1,16 +1,5 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "installCommand": "npm install --legacy-peer-deps",
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "ATHENA_CLIENT_ID": "@athena_client_id",
-    "ATHENA_CLIENT_SECRET": "@athena_client_secret",
-    "ATHENA_BASE_URL": "@athena_base_url",
-    "MODMED_BASE_URL": "@modmed_base_url",
-    "MODMED_FIRM_PREFIX": "@modmed_firm_prefix",
-    "MODMED_API_KEY": "@modmed_api_key",
-    "MODMED_USERNAME": "@modmed_username",
-    "MODMED_PASSWORD": "@modmed_password"
-  }
+  "installCommand": "npm install --legacy-peer-deps"
 }
